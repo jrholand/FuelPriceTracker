@@ -1,0 +1,10 @@
+{
+  "name": "kmic-fuel-tracker",
+  "version": "1.0.0",
+  "description": "Daily tracker for KMIC self-serve fuel prices posted on AirNav",
+  "type": "module",
+  "main": "track.js",
+  "scripts": { "track": "node track.js" },
+  "engines": { "node": ">=20" },
+  "dependencies": { "nodemailer": "6.9.14" }
+}
