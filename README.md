@@ -7,16 +7,17 @@ A row is added only when a price changes or can't be found. Days with no change 
 ## Tab layout
 | Row | Column A | Notes |
 |---|---|---|
-| 1 | AirNav URL: an airport page like `https://www.airnav.com/airport/KANE`, or one FBO's page like `https://www.airnav.com/airport/KMIC/A1` | Or put a label in A1 and the URL in B1 |
-| 2 | Airport ID, e.g. `KMIC` | Or a label in A2 and the ID in B2 |
+| 1 | *Optional.* AirNav URL: an airport page like `https://www.airnav.com/airport/KANE`, or one FBO's page like `https://www.airnav.com/airport/KMIC/A1` | Leave blank to use the airport's page. Or put a label in A1 and the URL in B1 |
+| 2 | Airport ID, e.g. `KMIC`, `MIC` or `21D` | Or a label in A2 and the ID in B2 |
 | 3 | Header | Written by the script |
 | 4+ | Price log | Written by the script |
 
-**To track a new airport:** add a tab, put the URL in A1 and the airport ID in A2. It's picked up on the next daily run, or right away if you run `track` from the script editor.
+**To track a new airport:** add a tab and put the airport ID in A2, leaving row 1 blank. It's picked up on the next daily run, or right away if you run `track` from the script editor.
 
-- **An airport page URL tracks every FBO** listed under "FBO, Fuel Providers" on that page. **An FBO page URL tracks only that seller.**
+- **With no URL, or an airport page URL, every FBO is tracked.** That means every FBO listed under "FBO, Fuel Providers" on the airport's page; sponsored FBOs at other airports are left out. **To track only one seller, put its FBO page URL in row 1.**
+- **An unknown airport ID** gives a "price not found" row and an alert email.
 - **Fuel types are found automatically.** Every fuel and service listed on the page is logged: 100LL, Jet A, MOGAS and so on, as self (SS), full (FS) or assisted (AS) service.
-- **Tabs are skipped without a URL in row 1 and an ID in row 2**, so you can keep notes or charts on other tabs.
+- **Tabs without an ID in row 2 are skipped**, so you can keep notes or charts on other tabs.
 
 ## Setup
 1. Open the sheet and choose **Extensions → Apps Script**.

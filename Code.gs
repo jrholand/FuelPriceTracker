@@ -1,5 +1,5 @@
 // Fuel price tracker (Google Apps Script), bound to the "KMIC Fuel Prices" sheet.
-// Every tab with an AirNav URL in row 1 and an airport ID in row 2 is tracked:
+// Every tab with an airport ID in row 2 (and optionally an AirNav URL in row 1) is tracked:
 // row 3 is the header and a row is added only when a fuel price changes or
 // can't be found. Emails an alert only in the latter case. The URL can be an
 // FBO page (airnav.com/airport/KMIC/A1) or an airport page (airnav.com/airport/KANE),
@@ -23,7 +23,7 @@ function parse_(html) {
   const page = toText(html).match(new RegExp(`(?:last reported on|Updated)\\s+${DATE_RE}`, 'i'));
   const prices = {};
   for (const tr of html.split(/<tr\b/i).slice(1)) {
-    const m = toText('<' + tr).match(/^(.{1,40}?)\s+(Self|Full|Assisted) service\s+\$(\d+\.\d{2})\b(.*)$/i);
+    const m = toText('<' + tr).match(/^(.{1,40}?)\s+(Self|Full|Assisted) service\s+\$(\d+\.\d{2,3})\b(.*)$/i);
     if (!m) continue;
     const fuel = m[1], service = SERVICES[m[2].toLowerCase()];
     const reported = m[4].match(new RegExp(`Reported\\s+${DATE_RE}`, 'i'));
@@ -40,7 +40,10 @@ function fboLinks_(html, url) {
   const end = html.slice(start).search(/Aviation Businesses, Services/i);
   const section = html.slice(start, end < 0 ? undefined : start + end);
   const origin = url.match(/^https?:\/\/[^/]+/i)[0];
-  const links = [...section.matchAll(/href="(\/airport\/[^/"]+\/[A-Za-z0-9_-]+)"/g)]
+  // Only FBOs at this airport; the section can also hold sponsored FBOs "Located at" others.
+  const code = (html.match(/<title>\s*AirNav:\s*([A-Z0-9]+)\s+-/i) || [])[1];
+  const links = [...section.matchAll(/href="(\/airport\/([^/"]+)\/[A-Za-z0-9_-]+)"/g)]
+    .filter(m => !code || m[2].toUpperCase() === code.toUpperCase())
     .map(m => m[1])
     .filter(p => !/\/(update-fuel|reportlinks)$/i.test(p));
   return [...new Set(links)].map(p => origin + p);
@@ -70,6 +73,8 @@ function fetchPrices_(url) {
   const isAirportPage = /\/airport\/[^/?#]+\/?(?:[?#].*)?$/i.test(url);
   const html = fetchHtml_(url);
   const pages = isAirportPage ? fboLinks_(html, url) : [url];
+  // AirNav answers an unknown ID with a generic page rather than an error.
+  if (/<title>\s*AirNav:\s*Airport Information\s*</i.test(html)) throw new Error('Unknown airport ID; AirNav has no page for it');
   if (isAirportPage && !pages.length) throw new Error('No FBOs listed on this airport page');
   const prices = {}, errors = [];
   pages.forEach((page, i) => {
@@ -87,13 +92,16 @@ function fetchPrices_(url) {
   return { prices, errors };
 }
 
-// Reads row 1 (URL) and row 2 (airport ID). Each may be in column A, or in B with a label in A.
+// Reads row 1 (URL, optional) and row 2 (airport ID). Each may be in column A, or in B
+// with a label in A. Without a URL, the airport's AirNav page is used.
 function tabConfig_(sheet) {
   if (sheet.getLastRow() < 2) return null;
   const [row1, row2] = sheet.getRange(1, 1, 2, 3).getDisplayValues();
-  const url = row1.map(v => v.trim()).find(v => /^https?:\/\//i.test(v));
-  const id = row2.map(v => v.trim()).filter(Boolean).pop();
-  return url && id ? { url, id: id.toUpperCase() } : null;
+  const id = (row2.map(v => v.trim()).filter(Boolean).pop() || '').toUpperCase();
+  if (!id) return null;
+  const url = row1.map(v => v.trim()).find(v => /^https?:\/\//i.test(v))
+    || `https://www.airnav.com/airport/${encodeURIComponent(id)}`;
+  return { url, id };
 }
 
 // Most recent price logged for each fbo|fuel|service on a tab, skipping "price not found" rows.
@@ -102,15 +110,21 @@ function lastPrices_(sheet) {
   const n = sheet.getLastRow() - HEADER_ROW;
   if (n < 1) return last;
   for (const [, fbo, fuel, service, price] of sheet.getRange(HEADER_ROW + 1, 1, n, 5).getValues()) {
-    if (fuel !== '' && price !== '') last[`${fbo}|${fuel}|${service}`] = { fbo, fuel, service, price: Number(price).toFixed(2) };
+    if (fuel !== '' && price !== '') last[`${fbo}|${fuel}|${service}`] = { fbo, fuel, service, price: Number(price) };
   }
   return last;
+}
+
+// $6.60, or $10.921 when AirNav lists a third decimal.
+function money_(n) {
+  const s = n.toFixed(3);
+  return '$' + (s.endsWith('0') ? n.toFixed(2) : s);
 }
 
 function trackTab_(sheet, { url }, today) {
   sheet.getRange(HEADER_ROW, 1, 1, HEADER.length).setValues([HEADER]);
   sheet.getRange(HEADER_ROW + 1, HEADER.indexOf('price_usd') + 1, sheet.getMaxRows() - HEADER_ROW, 1)
-    .setNumberFormat('$#,##0.00');
+    .setNumberFormat('$#,##0.00#');
   const prev = lastPrices_(sheet);
   let prices = {}, errors = [], error = '';
   try {
@@ -124,7 +138,7 @@ function trackTab_(sheet, { url }, today) {
   for (const [key, p] of Object.entries(prices)) {
     const row = [today, p.fbo, p.fuel, p.service, Number(p.price), p.updated];
     if (!prev[key]) rows.push([...row, 'first price']);
-    else if (prev[key].price !== p.price) rows.push([...row, `changed from $${prev[key].price}`]);
+    else if (prev[key].price !== Number(p.price)) rows.push([...row, `changed from ${money_(prev[key].price)}`]);
   }
   for (const [key, p] of Object.entries(prev)) {
     if (prices[key]) continue;
@@ -159,7 +173,7 @@ function track() {
   for (const sheet of ss.getSheets()) {
     const config = tabConfig_(sheet);
     if (!config) {
-      console.log(`${sheet.getName()}: skipped (needs a URL in row 1 and an airport ID in row 2)`);
+      console.log(`${sheet.getName()}: skipped (needs an airport ID in row 2)`);
       continue;
     }
     if (fetched++) Utilities.sleep(2000);
