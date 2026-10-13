@@ -5,20 +5,20 @@ A Google Apps Script attached to the **KMIC Fuel Prices** Google Sheet (Drive fo
 A row is added only when a price changes or can't be found. Days with no change add nothing. The only email it sends is an alert listing the airports whose prices couldn't be retrieved.
 
 ## Tab layout
-| Row | Column A | Notes |
+| Row | Column A | Column B |
 |---|---|---|
-| 1 | *Optional.* AirNav URL: an airport page like `https://www.airnav.com/airport/KANE`, or one FBO's page like `https://www.airnav.com/airport/KMIC/A1` | Leave blank to use the airport's page. Or put a label in A1 and the URL in B1 |
-| 2 | Airport ID, e.g. `KMIC`, `MIC` or `21D` | Or a label in A2 and the ID in B2 |
-| 3 | Header | Written by the script |
-| 4+ | Price log | Written by the script |
+| 1 | Airport ID, e.g. `KMIC`, `MIC` or `21D` | *Optional.* AirNav URL: an airport page like `https://www.airnav.com/airport/KANE`, or one FBO's page like `https://www.airnav.com/airport/KMIC/A1` |
+| 2 | Header (written by the script) | |
+| 3+ | Price log (written by the script) | |
 
-**To track a new airport:** add a tab and put the airport ID in A2, leaving row 1 blank. It's picked up on the next daily run, or right away if you run `track` from the script editor.
+**To track a new airport:** add a tab and type the airport ID in A1. It's picked up on the next daily run, or right away if you run `track` from the script editor.
 
-- **With no URL, or an airport page URL, every FBO is tracked.** That means every FBO listed under "FBO, Fuel Providers" on the airport's page; sponsored FBOs at other airports are left out. **To track only one seller, put its FBO page URL in row 1.**
+- **With no URL, or an airport page URL, every FBO is tracked.** That means every FBO listed under "FBO, Fuel Providers" on the airport's page; sponsored FBOs at other airports are left out. **To track only one seller, put its FBO page URL in B1.**
 - **Where the prices come from:** each FBO's own AirNav page when it shows prices, which gives full fuel names and exact prices like $10.921. Otherwise the price grid on the airport page is used, which has short names like `100LL` and rounds to cents. FBOs with a basic listing, like both of those at KBJI, have only the grid.
 - **An unknown airport ID** gives a "price not found" row and an alert email.
 - **Fuel types are found automatically.** Every fuel and service listed on the page is logged: 100LL, Jet A, MOGAS and so on, as self (SS), full (FS) or assisted (AS) service.
-- **Tabs without an ID in row 2 are skipped**, so you can keep notes or charts on other tabs.
+- **Tabs are skipped unless A1 holds an airport ID** (3–4 letters or digits), so you can keep notes or charts on other tabs.
+- **Old-layout tabs are converted automatically.** These are tabs with the URL in row 1, the ID in row 2 and the header in row 3. The next run moves the ID to A1 and the URL to B1, and deletes the old ID row. The price history is kept.
 
 ## Setup
 1. Open the sheet and choose **Extensions → Apps Script**.
@@ -29,11 +29,10 @@ A row is added only when a price changes or can't be found. Days with no change 
 
 Optional: set `ALERT_TO` in `Code.gs` to send alerts somewhere other than your Google account.
 
-## Log columns (row 3)
+## Log columns (row 2)
 `date_checked, fbo, fuel, service, price_usd, airnav_updated, note`
 
 - **`fbo`** is the fuel seller's name from its AirNav page.
-
 - **`airnav_updated`** is the date AirNav shows for that price ("Reported …" or "last reported on …"). It's blank when the page doesn't show one.
 - **`note`** says why the row was added: `first price`, `changed from $X.XX`, or `price not found` (with the error).
 - **Not-found rows** have a blank price and are skipped when comparing, so the next price is compared with the last real one.

@@ -1,6 +1,6 @@
 // Fuel price tracker (Google Apps Script), bound to the "KMIC Fuel Prices" sheet.
-// Every tab with an airport ID in row 2 (and optionally an AirNav URL in row 1) is tracked:
-// row 3 is the header and a row is added only when a fuel price changes or
+// Every tab with an airport ID in A1 (and optionally an AirNav URL in B1) is tracked:
+// row 2 is the header and a row is added only when a fuel price changes or
 // can't be found. Emails an alert only in the latter case. The URL can be an
 // FBO page (airnav.com/airport/KMIC/A1) or an airport page (airnav.com/airport/KANE),
 // in which case every FBO listed under "FBO, Fuel Providers" is tracked, from its own
@@ -8,7 +8,7 @@
 
 const ALERT_TO = ''; // blank = the Google account that owns the trigger
 const RUN_HOUR = 8;  // local hour (project time zone, America/Chicago)
-const HEADER_ROW = 3;
+const HEADER_ROW = 2;
 const HEADER = ['date_checked', 'fbo', 'fuel', 'service', 'price_usd', 'airnav_updated', 'note'];
 const SERVICES = { self: 'SS', full: 'FS', assisted: 'AS' };
 const DATE_RE = '(\\d{1,2}-[A-Za-z]{3}-\\d{4})';
@@ -138,16 +138,28 @@ function fetchPrices_(url) {
   return { prices, errors };
 }
 
-// Reads row 1 (URL, optional) and row 2 (airport ID). Each may be in column A, or in B
-// with a label in A. Without a URL, the airport's AirNav page is used.
+// Reads the airport ID from A1 and the optional AirNav URL from B1. Without a URL,
+// the airport's AirNav page is used. Tabs whose A1 isn't an airport ID are skipped.
 function tabConfig_(sheet) {
-  if (sheet.getLastRow() < 2) return null;
+  const [id, url] = sheet.getRange(1, 1, 1, 2).getDisplayValues()[0].map(v => v.trim());
+  if (!/^[A-Z0-9]{3,4}$/i.test(id)) return null;
+  return {
+    id: id.toUpperCase(),
+    url: /^https?:\/\//i.test(url) ? url : `https://www.airnav.com/airport/${id.toUpperCase()}`,
+  };
+}
+
+// Converts a tab from the old layout (URL in row 1, ID in row 2, header in row 3)
+// to ID in A1, URL in B1, header in row 2. Safe to run on every tab, every run.
+function migrateLayout_(sheet) {
+  if (sheet.getLastRow() < 3 || sheet.getRange(3, 1).getDisplayValue() !== HEADER[0]) return;
   const [row1, row2] = sheet.getRange(1, 1, 2, 3).getDisplayValues();
+  const url = row1.map(v => v.trim()).find(v => /^https?:\/\//i.test(v)) || '';
   const id = (row2.map(v => v.trim()).filter(Boolean).pop() || '').toUpperCase();
-  if (!id) return null;
-  const url = row1.map(v => v.trim()).find(v => /^https?:\/\//i.test(v))
-    || `https://www.airnav.com/airport/${encodeURIComponent(id)}`;
-  return { url, id };
+  sheet.deleteRow(2);
+  sheet.getRange(1, 1, 1, 3).clearContent();
+  sheet.getRange(1, 1, 1, 2).setValues([[id, url]]);
+  console.log(`${sheet.getName()}: moved to the new layout (ID in A1, URL in B1)`);
 }
 
 // Most recent price logged for each fbo|fuel|service on a tab, skipping "price not found" rows.
@@ -217,9 +229,10 @@ function track() {
   const problems = [];
   let fetched = 0;
   for (const sheet of ss.getSheets()) {
+    migrateLayout_(sheet);
     const config = tabConfig_(sheet);
     if (!config) {
-      console.log(`${sheet.getName()}: skipped (needs an airport ID in row 2)`);
+      console.log(`${sheet.getName()}: skipped (needs an airport ID in A1)`);
       continue;
     }
     if (fetched++) Utilities.sleep(2000);
