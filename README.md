@@ -1,24 +1,36 @@
-# KMIC Fuel Price Tracker
+# Fuel Price Tracker
 
-A Google Apps Script that checks the Metropolitan Airports Commission listing at Crystal Airport (KMIC) on AirNav once a day. It adds a row to the **KMIC Fuel Prices** Google Sheet in the Drive folder "fuel prices" only when a self-serve 100LL or Jet A price changes, or when a price can't be found. Days with no change add nothing.
+A Google Apps Script attached to the **KMIC Fuel Prices** Google Sheet (Drive folder "fuel prices"). Once a day it checks every tab that names an airport and logs AirNav fuel prices for it. You add an airport by adding a tab; no code changes are needed.
 
-The only email it sends is an alert when it can't retrieve prices: an HTTP error, a network failure, or a page with no prices on it. It also alerts when only one of the two fuels is found. A price change doesn't send an email; it only adds a row.
+A row is added only when a price changes or can't be found. Days with no change add nothing. The only email it sends is an alert listing the airports whose prices couldn't be retrieved.
+
+## Tab layout
+| Row | Column A | Notes |
+|---|---|---|
+| 1 | AirNav FBO page URL, e.g. `https://www.airnav.com/airport/KMIC/A1` | Or put a label in A1 and the URL in B1 |
+| 2 | Airport ID, e.g. `KMIC` | Or a label in A2 and the ID in B2 |
+| 3 | Header | Written by the script |
+| 4+ | Price log | Written by the script |
+
+**To track a new airport:** add a tab, put the URL in A1 and the airport ID in A2. It's picked up on the next daily run, or right away if you run `track` from the script editor.
+
+- **Use an FBO page URL**, the page for one fuel seller, like `.../airport/KANE/ATLANTIC`. The main airport page (`.../airport/KANE`) uses a different layout and won't find prices. Open the airport on AirNav and click the FBO's name to get its page.
+- **Fuel types are found automatically.** Every fuel and service listed on the page is logged: 100LL, Jet A, MOGAS and so on, as self (SS), full (FS) or assisted (AS) service.
+- **Tabs are skipped without a URL in row 1 and an ID in row 2**, so you can keep notes or charts on other tabs.
 
 ## Setup
-1. Open the sheet: https://docs.google.com/spreadsheets/d/1kecwol5lrTYjbp9eHOVtZ9We_rtfkxwx8r7UKCwz4wk/edit
-2. Choose **Extensions → Apps Script**.
-3. Replace the contents of `Code.gs` with this repo's [Code.gs](Code.gs).
-4. Under **Project Settings**, tick "Show appsscript.json manifest file in editor". Then replace that file with this repo's [appsscript.json](appsscript.json), which sets the time zone to America/Chicago.
-5. Select `setup` in the function dropdown and click **Run**. Approve the permissions prompt. This installs a daily trigger at about 8 AM Central.
-6. Select `track` and click **Run** once to confirm that a row is written.
+1. Open the sheet and choose **Extensions → Apps Script**.
+2. Run `setup` once and approve the permissions prompt. It installs a daily trigger at about 8 AM Central.
+3. Run `track` to check that rows appear.
 
-**Updating the code with clasp:** this repo is already linked to the sheet's script through `.clasp.json`. After editing `Code.gs`, run `clasp push`. `.claspignore` makes sure only `Code.gs` and `appsscript.json` are uploaded. If you change the manifest's permissions, run `setup` again from the editor.
+**Updating the code with clasp:** this repo is linked to the sheet's script through `.clasp.json`. After editing `Code.gs`, run `clasp push`. `.claspignore` makes sure only `Code.gs` and `appsscript.json` are uploaded. If you change the manifest's permissions, run `setup` again from the editor.
 
 Optional: set `ALERT_TO` in `Code.gs` to send alerts somewhere other than your Google account.
 
-## Sheet columns
+## Log columns (row 3)
 `date_checked, fuel, service, price_usd, airnav_updated, note`
 
-`note` says why the row was added: `first price`, `changed from $X.XX`, or `price not found` (with the error). A not-found row has a blank price and is skipped when comparing later prices, so the next price is compared with the last real one.
-
-`airnav_updated` is the listing's own "Updated" date when AirNav shows one. The current "guaranteed prices" layout doesn't show one, so the column may be blank. If you get a "No prices found" alert, AirNav changed its page layout and the regex in `parse()` needs adjusting.
+- **`airnav_updated`** is the date AirNav shows for that price ("Reported …" or "last reported on …"). It's blank when the page doesn't show one.
+- **`note`** says why the row was added: `first price`, `changed from $X.XX`, or `price not found` (with the error).
+- **Not-found rows** have a blank price and are skipped when comparing, so the next price is compared with the last real one.
+- **If you get a "No prices found" alert**, the URL isn't an FBO page, that FBO lists no prices, or AirNav changed its page layout and the regex in `parse_()` needs adjusting.
