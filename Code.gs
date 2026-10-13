@@ -109,6 +109,8 @@ function lastPrices_(sheet) {
 
 function trackTab_(sheet, { url }, today) {
   sheet.getRange(HEADER_ROW, 1, 1, HEADER.length).setValues([HEADER]);
+  sheet.getRange(HEADER_ROW + 1, HEADER.indexOf('price_usd') + 1, sheet.getMaxRows() - HEADER_ROW, 1)
+    .setNumberFormat('$#,##0.00');
   const prev = lastPrices_(sheet);
   let prices = {}, errors = [], error = '';
   try {
