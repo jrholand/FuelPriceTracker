@@ -15,6 +15,7 @@ A row is added only when a price changes or can't be found. Days with no change 
 **To track a new airport:** add a tab and put the airport ID in A2, leaving row 1 blank. It's picked up on the next daily run, or right away if you run `track` from the script editor.
 
 - **With no URL, or an airport page URL, every FBO is tracked.** That means every FBO listed under "FBO, Fuel Providers" on the airport's page; sponsored FBOs at other airports are left out. **To track only one seller, put its FBO page URL in row 1.**
+- **Where the prices come from:** each FBO's own AirNav page when it shows prices, which gives full fuel names and exact prices like $10.921. Otherwise the price grid on the airport page is used, which has short names like `100LL` and rounds to cents. FBOs with a basic listing, like both of those at KBJI, have only the grid.
 - **An unknown airport ID** gives a "price not found" row and an alert email.
 - **Fuel types are found automatically.** Every fuel and service listed on the page is logged: 100LL, Jet A, MOGAS and so on, as self (SS), full (FS) or assisted (AS) service.
 - **Tabs without an ID in row 2 are skipped**, so you can keep notes or charts on other tabs.
