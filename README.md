@@ -7,14 +7,14 @@ A row is added only when a price changes or can't be found. Days with no change 
 ## Tab layout
 | Row | Column A | Notes |
 |---|---|---|
-| 1 | AirNav FBO page URL, e.g. `https://www.airnav.com/airport/KMIC/A1` | Or put a label in A1 and the URL in B1 |
+| 1 | AirNav URL: an airport page like `https://www.airnav.com/airport/KANE`, or one FBO's page like `https://www.airnav.com/airport/KMIC/A1` | Or put a label in A1 and the URL in B1 |
 | 2 | Airport ID, e.g. `KMIC` | Or a label in A2 and the ID in B2 |
 | 3 | Header | Written by the script |
 | 4+ | Price log | Written by the script |
 
 **To track a new airport:** add a tab, put the URL in A1 and the airport ID in A2. It's picked up on the next daily run, or right away if you run `track` from the script editor.
 
-- **Use an FBO page URL**, the page for one fuel seller, like `.../airport/KANE/ATLANTIC`. The main airport page (`.../airport/KANE`) uses a different layout and won't find prices. Open the airport on AirNav and click the FBO's name to get its page.
+- **An airport page URL tracks every FBO** listed under "FBO, Fuel Providers" on that page. **An FBO page URL tracks only that seller.**
 - **Fuel types are found automatically.** Every fuel and service listed on the page is logged: 100LL, Jet A, MOGAS and so on, as self (SS), full (FS) or assisted (AS) service.
 - **Tabs are skipped without a URL in row 1 and an ID in row 2**, so you can keep notes or charts on other tabs.
 
@@ -28,9 +28,11 @@ A row is added only when a price changes or can't be found. Days with no change 
 Optional: set `ALERT_TO` in `Code.gs` to send alerts somewhere other than your Google account.
 
 ## Log columns (row 3)
-`date_checked, fuel, service, price_usd, airnav_updated, note`
+`date_checked, fbo, fuel, service, price_usd, airnav_updated, note`
+
+- **`fbo`** is the fuel seller's name from its AirNav page.
 
 - **`airnav_updated`** is the date AirNav shows for that price ("Reported …" or "last reported on …"). It's blank when the page doesn't show one.
 - **`note`** says why the row was added: `first price`, `changed from $X.XX`, or `price not found` (with the error).
 - **Not-found rows** have a blank price and are skipped when comparing, so the next price is compared with the last real one.
-- **If you get a "No prices found" alert**, the URL isn't an FBO page, that FBO lists no prices, or AirNav changed its page layout and the regex in `parse_()` needs adjusting.
+- **If you get a "No prices found" alert**, the URL is wrong, the FBO(s) list no prices, or AirNav changed its page layout and the regex in `parse_()` needs adjusting.
