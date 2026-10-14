@@ -1,6 +1,6 @@
 # Fuel Price Tracker
 
-A Google Apps Script attached to the [KMIC Fuel Prices](https://docs.google.com/spreadsheets/d/1kecwol5lrTYjbp9eHOVtZ9We_rtfkxwx8r7UKCwz4wk/edit) Google Sheet, in the Drive folder "fuel prices". Once a day it checks every tab that names an airport and logs that airport's AirNav fuel prices. To add an airport, add a tab; no code changes are needed.
+A Google Apps Script attached to the [Aviation Fuel Tracker](https://docs.google.com/spreadsheets/d/1kecwol5lrTYjbp9eHOVtZ9We_rtfkxwx8r7UKCwz4wk/edit) Google Sheet, in the Drive folder "fuel prices". Once a day it checks every tab that names an airport and logs that airport's AirNav fuel prices. To add an airport, add a tab; no code changes are needed.
 
 A row is added only when a price changes or can't be found. Days with no change add nothing. The only email it sends is an alert when prices can't be retrieved (see [Alerts](#alerts)).
 

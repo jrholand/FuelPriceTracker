@@ -1,4 +1,4 @@
-// Fuel price tracker (Google Apps Script), bound to the "KMIC Fuel Prices" sheet.
+// Fuel price tracker (Google Apps Script), bound to the "Aviation Fuel Tracker" sheet.
 // Every tab with an airport ID in A1 (and optionally an AirNav URL in B1) is tracked:
 // row 2 is the header and a row is added only when a fuel price changes or
 // can't be found. Emails an alert only in the latter case. The URL can be an
