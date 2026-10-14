@@ -5,14 +5,15 @@ A Google Apps Script attached to the [KMIC Fuel Prices](https://docs.google.com/
 A row is added only when a price changes or can't be found. Days with no change add nothing. The only email it sends is an alert when prices can't be retrieved (see [Alerts](#alerts)).
 
 ## Tab layout
-| Row | Column A | Column B |
-|---|---|---|
-| 1 | Airport ID, e.g. `KMIC`, `MIC` or `21D` | *Optional.* AirNav URL: an airport page like `https://www.airnav.com/airport/KANE`, or one FBO's page like `https://www.airnav.com/airport/KMIC/A1` |
-| 2 | Header (written by the script) | |
-| 3+ | Price log (written by the script) | |
+| Row | Column A | Column B | Column C |
+|---|---|---|---|
+| 1 | Airport ID, e.g. `KMIC`, `MIC` or `21D` | *Optional.* AirNav URL: an airport page like `https://www.airnav.com/airport/KANE`, or one FBO's page like `https://www.airnav.com/airport/KMIC/A1` | `Last checked: …` (written by the script) |
+| 2 | Header (written by the script) | | |
+| 3+ | Price log (written by the script) | | |
 
 **To track a new airport:** add a tab and type the airport ID in A1. The tab name doesn't matter. It's picked up on the next daily run, or right away if you run `track` from the script editor.
 
+- **C1 is updated on every run**, even when no price changed, so you can see that the daily run happened. It also says "problem; see alert email" when that airport's prices couldn't be retrieved.
 - **With no URL, or an airport page URL, every FBO is tracked.** That means every FBO listed under "FBO, Fuel Providers" on the airport's page; sponsored FBOs at other airports are left out. **To track only one seller, put its FBO page URL in B1.**
 - **Where the prices come from:** each FBO's own AirNav page when it shows prices, which gives full fuel names and exact prices like $10.921. Otherwise the price grid on the airport page is used, which has short names like `100LL` and rounds to cents. FBOs with a basic listing, like both of those at KBJI, have only the grid.
 - **Fuel types are found automatically.** Every fuel and service listed is logged: 100LL, Jet A, MOGAS and so on, as self (SS), full (FS) or assisted (AS) service.

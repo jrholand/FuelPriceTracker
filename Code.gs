@@ -243,6 +243,9 @@ function track() {
       message = e.message;
     }
     if (message) problems.push({ ...config, message });
+    // Stamped every run, so a day with no price changes doesn't look like a missed run.
+    const checked = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd h:mm a');
+    sheet.getRange(1, 3).setValue(`Last checked: ${checked}${message ? ' (problem; see alert email)' : ''}`);
   }
   if (problems.length) sendAlert_(problems, ss);
 }
